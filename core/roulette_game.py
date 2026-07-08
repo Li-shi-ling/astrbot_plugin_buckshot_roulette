@@ -12,7 +12,7 @@ SHELL_LIVE = "live"
 SHELL_BLANK = "blank"
 ITEM_BEER = "啤酒"
 ITEM_CIGARETTE = "香烟"
-ITEM_SAW = "手锯"
+ITEM_SAW = "锯子"
 ITEM_HANDCUFFS = "手铐"
 ITEM_MAGNIFIER = "放大镜"
 ITEM_EXPIRED_MEDICINE = "过期药"
@@ -204,7 +204,7 @@ class RouletteGame:
             self.next_live_damage = 1
             lines.append("咔，空弹。")
             if saw_active:
-                lines.append("手锯效果落空并消失。")
+                lines.append("锯子效果落空并消失。")
             if not target_self:
                 self._advance_turn(lines)
             else:
@@ -219,7 +219,7 @@ class RouletteGame:
         actor = self.require_playing_actor(actor_id)
         item_name = self.normalize_item_name(item_name)
         if item_name not in ITEM_POOL:
-            raise RouletteGameError("未知道具。可用：啤酒、香烟、手锯、手铐、放大镜、过期药、电话、换向器。")
+            raise RouletteGameError("未知道具。可用：啤酒、香烟、锯子、手铐、放大镜、过期药、电话、换向器。")
         if item_name not in actor.items:
             raise RouletteGameError(f"你没有道具：{item_name}")
 
@@ -229,6 +229,7 @@ class RouletteGame:
             if not self.shell_queue:
                 self.reload_shells(deal_items=True)
                 lines.append("弹队列为空，已重新装填。")
+                lines.append(self.shell_count_text())
             shell = self.shell_queue.pop(0)
             lines.append(
                 f"{actor.display_name} 使用啤酒，退掉了一发{'实弹' if shell == SHELL_LIVE else '空弹'}。"
@@ -241,10 +242,10 @@ class RouletteGame:
             lines.append(f"{actor.display_name} 使用香烟，恢复 1 点血。")
         elif item_name == ITEM_SAW:
             if self.next_live_damage > 1:
-                raise RouletteGameError("手锯效果已经生效。")
+                raise RouletteGameError("锯子效果已经生效。")
             self._consume_item(actor, item_name)
             self.next_live_damage = 2
-            lines.append(f"{actor.display_name} 使用手锯，下一发子弹若为实弹，伤害 +1；若为空弹，效果消失。")
+            lines.append(f"{actor.display_name} 使用锯子，下一发子弹若为实弹，伤害 +1；若为空弹，效果消失。")
         elif item_name == ITEM_HANDCUFFS:
             if target_number is None:
                 raise RouletteGameError("手铐需要目标编号，例如：轮盘道具 手铐 2")
@@ -259,6 +260,7 @@ class RouletteGame:
             if not self.shell_queue:
                 self.reload_shells(deal_items=True)
                 lines.append("弹队列为空，已重新装填。")
+                lines.append(self.shell_count_text())
             shell_text = "实弹" if self.shell_queue[0] == SHELL_LIVE else "空弹"
             lines.append(f"{actor.display_name} 使用放大镜，公开查看：下一发是{shell_text}。")
         elif item_name == ITEM_EXPIRED_MEDICINE:
@@ -277,6 +279,7 @@ class RouletteGame:
             if not self.shell_queue:
                 self.reload_shells(deal_items=True)
                 lines.append("弹队列为空，已重新装填。")
+                lines.append(self.shell_count_text())
             position = self.rng.randrange(len(self.shell_queue))
             shell_text = "实弹" if self.shell_queue[position] == SHELL_LIVE else "空弹"
             lines.append(f"{actor.display_name} 使用电话，公开情报：第 {position + 1} 发是{shell_text}。")
@@ -285,6 +288,7 @@ class RouletteGame:
             if not self.shell_queue:
                 self.reload_shells(deal_items=True)
                 lines.append("弹队列为空，已重新装填。")
+                lines.append(self.shell_count_text())
             self.shell_queue[0] = (
                 SHELL_BLANK if self.shell_queue[0] == SHELL_LIVE else SHELL_LIVE
             )
@@ -300,7 +304,7 @@ class RouletteGame:
             "烟": ITEM_CIGARETTE,
             "香烟": ITEM_CIGARETTE,
             "锯": ITEM_SAW,
-            "手锯": ITEM_SAW,
+            "锯子": ITEM_SAW,
             "啤酒": ITEM_BEER,
             "手铐": ITEM_HANDCUFFS,
             "铐": ITEM_HANDCUFFS,
@@ -358,7 +362,7 @@ class RouletteGame:
         return f"当前弹队列：实弹 {live} / 空弹 {blank}"
 
     def format_status(self) -> str:
-        lines = ["恶魔轮盘状态", self.shell_count_text()]
+        lines = ["恶魔轮盘状态"]
         if self.phase == "waiting":
             lines.append(f"阶段：等待开始（{len(self.players)}/{MAX_PLAYERS}）")
         elif self.phase == "playing":

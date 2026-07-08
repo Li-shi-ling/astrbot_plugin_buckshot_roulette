@@ -382,7 +382,7 @@ def _is_qqofficial_message_event(event: AstrMessageEvent) -> bool:
     "astrbot_plugin_buckshot_roulette",
     "lishining,Codex",
     "QQOfficial 群聊多人无庄家恶魔轮盘插件",
-    "1.2.4",
+    "1.2.5",
 )
 class BuckshotRoulettePlugin(Star):
     def __init__(self, context: Context, config: AstrBotConfig | None = None):

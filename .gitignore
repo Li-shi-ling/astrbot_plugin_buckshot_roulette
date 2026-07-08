@@ -210,3 +210,5 @@ scripts/
 docs/
 .codex/
 CONSTRAINTS.md
+.idea/
+.omx/
