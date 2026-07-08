@@ -33,3 +33,21 @@ QQOfficial 群聊多人无庄家恶魔轮盘插件。支持 2-10 人房间、公
 手铐是目标型道具：可直接发送 `轮盘道具 手铐 编号`；点击手铐按钮时会先发送目标选择按钮。放大镜、过期药、电话仍是玩家个人持有和使用的道具，只是使用结果会在群里公开。
 
 按钮全部使用 QQ 官方 `action.type = 2` 指令按钮。文本指令始终是完整入口，即使客户端不显示按钮也能完成对局。
+
+## 声明
+
+纯粹vb,vb太好用了你知道吗()
+
+## 许可
+
+AGPL-3.0
+
+## 开发者
+
+- 开发者：Lishining
+- 标语：恶魔轮盘不赖
+- QQ 群：1083090761
+
+欢迎 issue 和 PR，我看到后会认真处理。
+
+[![Moe Counter](https://count.getloli.com/get/@li-shi-ling?theme=minecraft)](https://github.com/Li-shi-ling/astrbot_plugin_mrfzccl)
