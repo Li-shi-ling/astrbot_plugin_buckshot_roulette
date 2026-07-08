@@ -277,6 +277,29 @@ def _build_roulette_settings_keyboard(settings: RouletteSettings | None) -> qinl
     }
 
 
+def _build_roulette_menu_keyboard() -> qinline.Keyboard:
+    return {
+        "content": {
+            "rows": [
+                {
+                    "buttons": [
+                        _build_roulette_button("roulette_menu_create", "房间创建", "轮盘创建"),
+                        _build_roulette_button("roulette_menu_settings", "游戏设置", "轮盘设置"),
+                    ]
+                }
+            ]
+        }
+    }
+
+
+def _build_roulette_menu_payload() -> dict[str, Any]:
+    return {
+        "msg_type": 2,
+        "markdown": MarkdownPayload(content=_format_roulette_markdown("轮盘菜单")),
+        "keyboard": _build_roulette_menu_keyboard(),
+    }
+
+
 def _format_roulette_markdown(text: str) -> str:
     if not str(text or "").strip() or str(text).strip() == "轮盘":
         return "轮盘"
@@ -287,7 +310,7 @@ def _format_roulette_markdown(text: str) -> str:
         if not stripped:
             formatted.append("")
             continue
-        if stripped in {"恶魔轮盘状态", "恶魔轮盘指令：", "恶魔轮盘指令:", "轮盘设置", "选择手铐目标"}:
+        if stripped in {"恶魔轮盘状态", "恶魔轮盘指令：", "恶魔轮盘指令:", "轮盘设置", "轮盘菜单", "选择手铐目标"}:
             formatted.append(f"## {stripped.rstrip('：:')}")
         elif stripped.startswith("当前弹队列："):
             formatted.append(f"**当前弹队列**：{stripped.removeprefix('当前弹队列：')}")
@@ -359,7 +382,7 @@ def _is_qqofficial_message_event(event: AstrMessageEvent) -> bool:
     "astrbot_plugin_buckshot_roulette",
     "lishining,Codex",
     "QQOfficial 群聊多人无庄家恶魔轮盘插件",
-    "1.2.3",
+    "1.2.4",
 )
 class BuckshotRoulettePlugin(Star):
     def __init__(self, context: Context, config: AstrBotConfig | None = None):
@@ -393,6 +416,16 @@ class BuckshotRoulettePlugin(Star):
     @filter.command("轮盘帮助")
     async def roulette_help_named_command(self, event: AstrMessageEvent):
         async for result in self._handle_registered_roulette(event):
+            yield result
+
+    @filter.platform_adapter_type(
+        filter.PlatformAdapterType.QQOFFICIAL
+        | filter.PlatformAdapterType.QQOFFICIAL_WEBHOOK
+    )
+    @filter.event_message_type(filter.EventMessageType.GROUP_MESSAGE)
+    @filter.command("轮盘菜单")
+    async def roulette_menu_command(self, event: AstrMessageEvent):
+        async for result in self._handle_roulette_menu(event):
             yield result
 
     @filter.platform_adapter_type(
@@ -514,6 +547,18 @@ class BuckshotRoulettePlugin(Star):
     async def roulette_item_command(self, event: AstrMessageEvent):
         async for result in self._handle_registered_roulette(event):
             yield result
+
+    async def _handle_roulette_menu(self, event: AstrMessageEvent):
+        command_text = self._extract_roulette_command_text(event)
+        if command_text is None:
+            return
+        async for result in self._send_qqofficial_group_markdown(
+            event,
+            command_name="roulette_menu",
+            payload=_build_roulette_menu_payload(),
+        ):
+            yield result
+        event.stop_event()
 
     async def _handle_registered_roulette(self, event: AstrMessageEvent):
         command_text = self._extract_roulette_command_text(event)
