@@ -1,0 +1,69 @@
+{
+  "roulette_settings": {
+    "description": "恶魔轮盘公开默认设置",
+    "type": "object",
+    "hint": "这些设置作为公开默认值使用；不开房也可以通过“轮盘设置”查看和修改，创建新房间时会复制当前默认值。",
+    "items": {
+      "shell_count_max": {
+        "description": "每轮子弹上限",
+        "type": "int",
+        "default": 4,
+        "hint": "未开启随机子弹数时直接使用该值；最小为 2。"
+      },
+      "shell_count_min": {
+        "description": "每轮子弹下限",
+        "type": "int",
+        "default": 2,
+        "hint": "开启随机子弹数时作为随机最小值；小于 2 会按 2 处理。"
+      },
+      "random_shell_count": {
+        "description": "是否随机生成每轮子弹数",
+        "type": "bool",
+        "default": false,
+        "hint": "开启后会在子弹下限和子弹上限之间随机生成，至少为 2。"
+      },
+      "item_count_max": {
+        "description": "每轮道具刷新上限",
+        "type": "int",
+        "default": 1,
+        "hint": "未开启随机道具刷新数时直接使用该值；每次装填所有存活玩家都会获得相同数量。"
+      },
+      "item_count_min": {
+        "description": "每轮道具刷新下限",
+        "type": "int",
+        "default": 1,
+        "hint": "开启随机道具刷新数时作为随机最小值；小于 0 会按 0 处理。"
+      },
+      "random_item_count": {
+        "description": "是否随机生成每轮道具刷新数",
+        "type": "bool",
+        "default": false,
+        "hint": "开启后会在道具刷新下限和上限之间随机一次，所有存活玩家使用同一个刷新数量。"
+      },
+      "item_inventory_max": {
+        "description": "道具持有上限",
+        "type": "int",
+        "default": 8,
+        "hint": "每名玩家同时可持有的道具上限；范围 0-20。"
+      },
+      "hp_max": {
+        "description": "用户最大血量",
+        "type": "int",
+        "default": 2,
+        "hint": "未开启随机血量时直接使用该值；最小为 1。"
+      },
+      "hp_min": {
+        "description": "用户最小血量",
+        "type": "int",
+        "default": 1,
+        "hint": "开启随机血量时作为随机最小值；小于 1 会按 1 处理。"
+      },
+      "random_hp": {
+        "description": "是否每次开局随机生成用户血量",
+        "type": "bool",
+        "default": false,
+        "hint": "开启后会在血量下限和血量上限之间为每名玩家随机开局血量。"
+      }
+    }
+  }
+}

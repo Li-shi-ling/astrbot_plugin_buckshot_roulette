@@ -1,14 +1,35 @@
-# astrbot-plugin-helloworld
+# 恶魔轮盘 QQOfficial
 
-AstrBot 插件模板 / A template plugin for AstrBot plugin feature
+QQOfficial 群聊多人无庄家恶魔轮盘插件。支持 2-10 人房间、公开弹数、道具、回合推进、淘汰和胜负结算。
 
-> [!NOTE]
-> This repo is just a template of [AstrBot](https://github.com/AstrBotDevs/AstrBot) Plugin.
-> 
-> [AstrBot](https://github.com/AstrBotDevs/AstrBot) is an agentic assistant for both personal and group conversations. It can be deployed across dozens of mainstream instant messaging platforms, including QQ, Telegram, Feishu, DingTalk, Slack, LINE, Discord, Matrix, etc. In addition, it provides a reliable and extensible conversational AI infrastructure for individuals, developers, and teams. Whether you need a personal AI companion, an intelligent customer support agent, an automation assistant, or an enterprise knowledge base, AstrBot enables you to quickly build AI applications directly within your existing messaging workflows.
+当前版本：v1.2.1
 
-# Supports
+## 常用指令
 
-- [AstrBot Repo](https://github.com/AstrBotDevs/AstrBot)
-- [AstrBot Plugin Development Docs (Chinese)](https://docs.astrbot.app/dev/star/plugin-new.html)
-- [AstrBot Plugin Development Docs (English)](https://docs.astrbot.app/en/dev/star/plugin-new.html)
+```text
+@机器人 轮盘绑定 昵称
+@机器人 轮盘我的名字
+@机器人 轮盘改名 新昵称
+@机器人 轮盘创建
+@机器人 轮盘加入
+@机器人 轮盘设置
+@机器人 轮盘开始
+@机器人 轮盘状态
+@机器人 轮盘开枪 自己
+@机器人 轮盘开枪 编号
+@机器人 轮盘道具 啤酒
+@机器人 轮盘道具 香烟
+@机器人 轮盘道具 手锯
+@机器人 轮盘道具 手铐 编号
+@机器人 轮盘道具 放大镜
+@机器人 轮盘道具 过期药
+@机器人 轮盘道具 电话
+@机器人 轮盘道具 换向器
+@机器人 轮盘结束
+```
+
+`轮盘设置` 是群内公开默认设置，未开房时也可以修改；创建新房间时会复制当前默认值。数量按钮会生成带 `[数量]` 占位的指令，需要手动改成实际数字后发送。
+
+手铐是目标型道具：可直接发送 `轮盘道具 手铐 编号`；点击手铐按钮时会先发送目标选择按钮。放大镜、过期药、电话仍是玩家个人持有和使用的道具，只是使用结果会在群里公开。
+
+按钮全部使用 QQ 官方 `action.type = 2` 指令按钮。文本指令始终是完整入口，即使客户端不显示按钮也能完成对局。
