@@ -2,7 +2,7 @@
 
 QQOfficial 群聊多人无庄家恶魔轮盘插件。支持 2-10 人房间、公开弹数、道具、回合推进、淘汰和胜负结算。
 
-当前版本：v1.2.2
+当前版本：v1.2.3
 
 ## 常用指令
 
@@ -19,7 +19,7 @@ QQOfficial 群聊多人无庄家恶魔轮盘插件。支持 2-10 人房间、公
 @机器人 轮盘开枪 编号
 @机器人 轮盘道具 啤酒
 @机器人 轮盘道具 香烟
-@机器人 轮盘道具 手锯
+@机器人 轮盘道具 锯子
 @机器人 轮盘道具 手铐 编号
 @机器人 轮盘道具 放大镜
 @机器人 轮盘道具 过期药
@@ -50,4 +50,4 @@ AGPL-3.0
 
 欢迎 issue 和 PR，我看到后会认真处理。
 
-[![Moe Counter](https://count.getloli.com/get/@li-shi-ling?theme=minecraft)](https://github.com/Li-shi-ling/astrbot_plugin_mrfzccl)
+[![Moe Counter](https://count.getloli.com/get/@li-shi-ling?theme=minecraft)](https://github.com/Li-shi-ling/astrbot_plugin_buckshot_roulette)
