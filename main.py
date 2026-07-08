@@ -1,20 +1,12 @@
 import asyncio
 import dataclasses
-import hashlib
 import json
-import os
 import random
 import re
-import urllib.parse
-import urllib.request
-from dataclasses import dataclass
-from enum import Enum
 from pathlib import Path
-from types import SimpleNamespace
 from typing import Any
 
 import botpy.message as botpy_message
-from botpy.interaction import Interaction
 from botpy.types import inline as qinline
 from botpy.types.message import MarkdownPayload
 
@@ -68,6 +60,7 @@ except ImportError:
         RouletteSettings,
     )
 
+
 QQOFFICIAL_PLATFORMS = {"qq_official", "qq_official_webhook"}
 QQOFFICIAL_MESSAGE_EVENT_NAMES = {
     "QQOfficialMessageEvent",
@@ -78,26 +71,6 @@ QQOFFICIAL_MESSAGE_EVENT_MODULE_PREFIXES = (
     "astrbot.core.platform.sources.qqofficial_webhook.",
 )
 BOT_AT_MARKER = "qq_official"
-BOX_COMMAND_PATTERN = re.compile(r"^\s*盒\s+(\d+)\s*$")
-BUTTON_A_ID = "qqofficial_btn_a"
-BUTTON_B_ID = "qqofficial_btn_b"
-BUTTON_A_DATA = "qqofficial_button_a"
-BUTTON_B_DATA = "qqofficial_button_b"
-CALLBACK_BUTTON_A_ID = "qqofficial_callback_btn_a"
-CALLBACK_BUTTON_B_ID = "qqofficial_callback_btn_b"
-CALLBACK_BUTTON_A_DATA = "callback_button_a"
-CALLBACK_BUTTON_B_DATA = "callback_button_b"
-BUTTON_PROMPT = "请选择一个按钮"
-CALLBACK_BUTTON_PROMPT = "请选择一个回调按钮"
-BUTTON_A_LABEL = "按钮 A"
-BUTTON_B_LABEL = "按钮 B"
-CALLBACK_BUTTON_A_LABEL = "回调 A"
-CALLBACK_BUTTON_B_LABEL = "回调 B"
-BUTTON_A_VISITED_LABEL = "已按下 A"
-BUTTON_B_VISITED_LABEL = "已按下 B"
-CALLBACK_BUTTON_A_VISITED_LABEL = "已回调 A"
-CALLBACK_BUTTON_B_VISITED_LABEL = "已回调 B"
-QQOFFICIAL_INTERACTION_INTENT = 1 << 26
 ROULETTE_COMMAND_PREFIX = "轮盘"
 ROULETTE_NO_TARGET_BUTTON_ITEMS = (
     ITEM_BEER,
@@ -109,213 +82,6 @@ ROULETTE_NO_TARGET_BUTTON_ITEMS = (
     ITEM_PHONE,
     ITEM_INVERTER,
 )
-
-TENCENT_MAP_API_BASE = "https://apis.map.qq.com"
-TENCENT_MAP_PLACE_SEARCH_PATH = "/ws/place/v1/search"
-TENCENT_MAP_STATIC_PATH = "/ws/staticmap/v2/"
-DEFAULT_PLACE_KEYWORDS = [
-    "公园",
-    "商场",
-    "酒店",
-    "学校",
-    "医院",
-    "景点",
-    "美食",
-    "超市",
-]
-
-MAX_DUMP_DEPTH = 8
-MAX_TEXT_CHUNK_SIZE = 1800
-SENSITIVE_KEYWORDS = (
-    "secret",
-    "token",
-    "authorization",
-    "password",
-    "passwd",
-    "cookie",
-    "session_key",
-)
-SKIPPED_EVENT_FIELDS = {
-    "bot",
-    "context",
-    "ctx",
-    "message_obj",
-    "platform",
-    "platform_meta",
-    "session",
-    "span",
-    "trace",
-}
-
-
-@dataclass(frozen=True)
-class GeneratedLocation:
-    address: str
-    map_url: str | None = None
-
-
-@dataclass(frozen=True)
-class QQOfficialButtonSpec:
-    button_id: str
-    label: str
-    visited_label: str
-    data: str
-
-
-@dataclass(frozen=True)
-class QQOfficialInteractionContext:
-    interaction_id: str
-    scene: str | None
-    chat_type: int | None
-    user_openid: str | None = None
-    group_openid: str | None = None
-    group_member_openid: str | None = None
-    guild_id: str | None = None
-    channel_id: str | None = None
-    button_id: str | None = None
-    button_data: str | None = None
-    message_id: str | None = None
-
-
-class QQOfficialEventPlatformProxy:
-    def __init__(self, client: Any, platform_name: str | None):
-        self.client = client
-        self._platform_name = platform_name
-
-    def meta(self) -> Any:
-        return SimpleNamespace(name=self._platform_name)
-
-
-def _build_button_keyboard() -> qinline.Keyboard:
-    return {
-        "content": {
-            "rows": [
-                {
-                    "buttons": [
-                        _build_button_payload(
-                            QQOfficialButtonSpec(
-                                button_id=BUTTON_A_ID,
-                                label=BUTTON_A_LABEL,
-                                visited_label=BUTTON_A_VISITED_LABEL,
-                                data=BUTTON_A_DATA,
-                            )
-                        ),
-                        _build_button_payload(
-                            QQOfficialButtonSpec(
-                                button_id=BUTTON_B_ID,
-                                label=BUTTON_B_LABEL,
-                                visited_label=BUTTON_B_VISITED_LABEL,
-                                data=BUTTON_B_DATA,
-                            )
-                        ),
-                    ]
-                }
-            ]
-        }
-    }
-
-
-def _build_button_payload(spec: QQOfficialButtonSpec) -> qinline.Button:
-    return {
-        "id": spec.button_id,
-        "render_data": {
-            "label": spec.label,
-            "visited_label": spec.visited_label,
-            "style": 1,
-        },
-        "action": {
-            "type": 2,
-            "permission": {
-                "type": 2,
-            },
-            "data": spec.data,
-            "reply": True,
-            "enter": False,
-            "unsupport_tips": "当前客户端不支持该按钮",
-        },
-    }
-
-
-def _build_callback_button_keyboard() -> qinline.Keyboard:
-    return {
-        "content": {
-            "rows": [
-                {
-                    "buttons": [
-                        _build_callback_button_payload(
-                            QQOfficialButtonSpec(
-                                button_id=CALLBACK_BUTTON_A_ID,
-                                label=CALLBACK_BUTTON_A_LABEL,
-                                visited_label=CALLBACK_BUTTON_A_VISITED_LABEL,
-                                data=CALLBACK_BUTTON_A_DATA,
-                            )
-                        ),
-                        _build_callback_button_payload(
-                            QQOfficialButtonSpec(
-                                button_id=CALLBACK_BUTTON_B_ID,
-                                label=CALLBACK_BUTTON_B_LABEL,
-                                visited_label=CALLBACK_BUTTON_B_VISITED_LABEL,
-                                data=CALLBACK_BUTTON_B_DATA,
-                            )
-                        ),
-                    ]
-                }
-            ]
-        }
-    }
-
-
-def _build_callback_button_payload(spec: QQOfficialButtonSpec) -> qinline.Button:
-    return {
-        "id": spec.button_id,
-        "render_data": {
-            "label": spec.label,
-            "visited_label": spec.visited_label,
-            "style": 1,
-        },
-        "action": {
-            "type": 1,
-            "permission": {
-                "type": 2,
-                "specify_user_ids": [],
-                "specify_role_ids": [],
-            },
-            "data": spec.data,
-            "click_limit": 0,
-            "at_bot_show_channel_list": False,
-            "unsupport_tips": "当前客户端不支持该按钮",
-        },
-    }
-
-
-def _button_display_text(button_id: str | None, button_data: str | None) -> str:
-    if button_id in {BUTTON_A_ID, CALLBACK_BUTTON_A_ID} or button_data in {
-        BUTTON_A_DATA,
-        CALLBACK_BUTTON_A_DATA,
-    }:
-        return "A"
-    if button_id in {BUTTON_B_ID, CALLBACK_BUTTON_B_ID} or button_data in {
-        BUTTON_B_DATA,
-        CALLBACK_BUTTON_B_DATA,
-    }:
-        return "B"
-    return "未知"
-
-
-def _build_button_message_payload() -> dict[str, Any]:
-    return {
-        "msg_type": 2,
-        "markdown": MarkdownPayload(content=BUTTON_PROMPT),
-        "keyboard": _build_button_keyboard(),
-    }
-
-
-def _build_callback_button_message_payload() -> dict[str, Any]:
-    return {
-        "msg_type": 2,
-        "markdown": MarkdownPayload(content=CALLBACK_BUTTON_PROMPT),
-        "keyboard": _build_callback_button_keyboard(),
-    }
 
 
 def _build_roulette_button(
@@ -359,21 +125,9 @@ def _build_roulette_keyboard(game: RouletteGame | None) -> qinline.Keyboard:
                 "rows": [
                     {
                         "buttons": [
-                            _build_roulette_button(
-                                "roulette_join",
-                                "加入",
-                                "轮盘加入",
-                            ),
-                            _build_roulette_button(
-                                "roulette_leave",
-                                "退出",
-                                "轮盘退出",
-                            ),
-                            _build_roulette_button(
-                                "roulette_start",
-                                "开始",
-                                "轮盘开始",
-                            ),
+                            _build_roulette_button("roulette_join", "加入", "轮盘加入"),
+                            _build_roulette_button("roulette_leave", "退出", "轮盘退出"),
+                            _build_roulette_button("roulette_start", "开始", "轮盘开始"),
                         ]
                     }
                 ]
@@ -465,13 +219,7 @@ def _build_roulette_handcuffs_target_keyboard(game: RouletteGame | None) -> qinl
                 f"轮盘道具 手铐 {number}",
             )
         )
-    buttons.append(
-        _build_roulette_button(
-            "roulette_handcuffs_cancel",
-            "取消",
-            "轮盘状态",
-        )
-    )
+    buttons.append(_build_roulette_button("roulette_handcuffs_cancel", "取消", "轮盘状态"))
     rows = [{"buttons": buttons[offset : offset + 5]} for offset in range(0, len(buttons), 5)]
     return {"content": {"rows": rows[:5]}}
 
@@ -562,19 +310,6 @@ def _format_roulette_markdown(text: str) -> str:
     return "\n".join(formatted)
 
 
-def _build_button_reply_payload(text: str) -> dict[str, Any]:
-    return {
-        "content": text,
-        "msg_type": 0,
-        "markdown": None,
-        "keyboard": None,
-    }
-
-
-def _build_button_reply_text(button_id: str | None, button_data: str | None) -> str:
-    return f"你按了 {_button_display_text(button_id, button_data)}"
-
-
 def _first_non_empty_str(*values: Any) -> str | None:
     for value in values:
         if value is None:
@@ -609,67 +344,7 @@ def _add_passive_reply_context(
 
 
 def _debug_json(value: Any) -> str:
-    return json.dumps(_json_safe(value), ensure_ascii=False, default=str)
-
-
-def _build_button_debug_context(raw_message: Any, message_obj: Any) -> dict[str, Any]:
-    author = getattr(raw_message, "author", None)
-    return {
-        "raw_message_class": f"{type(raw_message).__module__}.{type(raw_message).__name__}",
-        "raw_id": getattr(raw_message, "id", None),
-        "raw_msg_seq": getattr(raw_message, "msg_seq", None),
-        "raw_event_id": getattr(raw_message, "event_id", None),
-        "message_obj_message_id": getattr(message_obj, "message_id", None),
-        "group_openid": getattr(raw_message, "group_openid", None),
-        "author_user_openid": getattr(author, "user_openid", None),
-        "author_member_openid": getattr(author, "member_openid", None),
-    }
-
-
-def _extract_interaction_context(raw_event: Any) -> QQOfficialInteractionContext | None:
-    if raw_event is None:
-        return None
-
-    interaction: Any
-    if isinstance(raw_event, Interaction):
-        interaction = raw_event
-    else:
-        interaction = raw_event
-
-    data = getattr(interaction, "data", None)
-    resolved = getattr(data, "resolved", None)
-    button_id = getattr(resolved, "button_id", None)
-    button_data = getattr(resolved, "button_data", None)
-    message_id = getattr(resolved, "message_id", None)
-    return QQOfficialInteractionContext(
-        interaction_id=str(getattr(interaction, "id", "") or ""),
-        scene=getattr(interaction, "scene", None),
-        chat_type=getattr(interaction, "chat_type", None),
-        user_openid=getattr(interaction, "user_openid", None),
-        group_openid=getattr(interaction, "group_openid", None),
-        group_member_openid=getattr(interaction, "group_member_openid", None),
-        guild_id=getattr(interaction, "guild_id", None),
-        channel_id=getattr(interaction, "channel_id", None),
-        button_id=str(button_id) if button_id is not None else None,
-        button_data=str(button_data) if button_data is not None else None,
-        message_id=str(message_id) if message_id is not None else None,
-    )
-
-
-def _interaction_to_debug_dict(context: QQOfficialInteractionContext) -> dict[str, Any]:
-    return {
-        "interaction_id": context.interaction_id,
-        "scene": context.scene,
-        "chat_type": context.chat_type,
-        "user_openid": context.user_openid,
-        "group_openid": context.group_openid,
-        "group_member_openid": context.group_member_openid,
-        "guild_id": context.guild_id,
-        "channel_id": context.channel_id,
-        "button_id": context.button_id,
-        "button_data": context.button_data,
-        "message_id": context.message_id,
-    }
+    return json.dumps(value, ensure_ascii=False, default=str)
 
 
 def _is_qqofficial_message_event(event: AstrMessageEvent) -> bool:
@@ -681,415 +356,167 @@ def _is_qqofficial_message_event(event: AstrMessageEvent) -> bool:
     )
 
 
-def _is_sensitive_key(key: str) -> bool:
-    lowered = key.lower()
-    return any(word in lowered for word in SENSITIVE_KEYWORDS)
-
-
-def _safe_repr(value: Any) -> str:
-    try:
-        text = repr(value)
-    except Exception as exc:
-        return f"<repr failed: {exc}>"
-    if len(text) > 500:
-        return text[:500] + "...<truncated>"
-    return text
-
-
-def _iter_object_fields(obj: Any) -> dict[str, Any]:
-    fields: dict[str, Any] = {}
-    if hasattr(obj, "__dict__"):
-        try:
-            fields.update(vars(obj))
-        except Exception:
-            pass
-
-    for cls in type(obj).__mro__:
-        slots = getattr(cls, "__slots__", ())
-        if isinstance(slots, str):
-            slots = (slots,)
-        for slot in slots:
-            if not isinstance(slot, str) or slot.startswith("__") or slot in fields:
-                continue
-            try:
-                fields[slot] = getattr(obj, slot)
-            except Exception as exc:
-                fields[slot] = f"<getattr failed: {exc}>"
-    return fields
-
-
-def _json_safe(value: Any, *, depth: int = 0, seen: set[int] | None = None) -> Any:
-    if seen is None:
-        seen = set()
-    if depth > MAX_DUMP_DEPTH:
-        return f"<max depth {MAX_DUMP_DEPTH} reached: {type(value).__module__}.{type(value).__name__}>"
-
-    if value is None or isinstance(value, bool | int | float | str):
-        return value
-    if isinstance(value, bytes):
-        return {"__type__": "bytes", "length": len(value)}
-    if isinstance(value, Enum):
-        return value.value
-    if isinstance(value, Path):
-        return str(value)
-
-    value_id = id(value)
-    if value_id in seen:
-        return f"<circular reference: {type(value).__module__}.{type(value).__name__}>"
-
-    if isinstance(value, dict):
-        seen.add(value_id)
-        result = {}
-        for key, item in value.items():
-            key_text = str(key)
-            result[key_text] = (
-                "<redacted>"
-                if _is_sensitive_key(key_text)
-                else _json_safe(item, depth=depth + 1, seen=seen)
-            )
-        seen.discard(value_id)
-        return result
-
-    if isinstance(value, list | tuple | set | frozenset):
-        seen.add(value_id)
-        result = [_json_safe(item, depth=depth + 1, seen=seen) for item in value]
-        seen.discard(value_id)
-        return result
-
-    if dataclasses.is_dataclass(value) and not isinstance(value, type):
-        seen.add(value_id)
-        result = {}
-        for field in dataclasses.fields(value):
-            result[field.name] = (
-                "<redacted>"
-                if _is_sensitive_key(field.name)
-                else _json_safe(getattr(value, field.name), depth=depth + 1, seen=seen)
-            )
-        seen.discard(value_id)
-        return result
-
-    if hasattr(value, "model_dump"):
-        try:
-            return _json_safe(value.model_dump(), depth=depth + 1, seen=seen)
-        except Exception:
-            pass
-    if hasattr(value, "dict"):
-        try:
-            return _json_safe(value.dict(), depth=depth + 1, seen=seen)
-        except Exception:
-            pass
-
-    fields = _iter_object_fields(value)
-    if fields:
-        seen.add(value_id)
-        result: dict[str, Any] = {
-            "__class__": f"{type(value).__module__}.{type(value).__name__}",
-            "__repr__": _safe_repr(value),
-        }
-        for key, item in fields.items():
-            if key.startswith("_api") or key in {"_connection", "_http", "api", "http"}:
-                result[key] = f"<skipped: {type(item).__module__}.{type(item).__name__}>"
-            elif _is_sensitive_key(key):
-                result[key] = "<redacted>"
-            else:
-                result[key] = _json_safe(item, depth=depth + 1, seen=seen)
-        seen.discard(value_id)
-        return result
-
-    return {
-        "__class__": f"{type(value).__module__}.{type(value).__name__}",
-        "__repr__": _safe_repr(value),
-    }
-
-
-def _event_getters(event: AstrMessageEvent) -> dict[str, Any]:
-    getter_names = [
-        "get_platform_name",
-        "get_platform_id",
-        "get_message_str",
-        "get_message_outline",
-        "get_message_type",
-        "get_session_id",
-        "get_group_id",
-        "get_self_id",
-        "get_sender_id",
-        "get_sender_name",
-        "is_private_chat",
-        "is_wake_up",
-        "is_admin",
-        "is_stopped",
-    ]
-    values: dict[str, Any] = {}
-    for name in getter_names:
-        try:
-            values[name] = _json_safe(getattr(event, name)())
-        except Exception as exc:
-            values[name] = f"<call failed: {exc}>"
-    return values
-
-
-def _event_public_attrs(event: AstrMessageEvent) -> dict[str, Any]:
-    attrs = {}
-    for key, value in _iter_object_fields(event).items():
-        if key in SKIPPED_EVENT_FIELDS:
-            continue
-        if key.startswith("_") and key not in {"_extras", "_result", "_has_send_oper"}:
-            continue
-        attrs[key] = _json_safe(value)
-    return attrs
-
-
-def _component_dump(event: AstrMessageEvent) -> list[Any]:
-    dumped = []
-    for component in event.get_messages():
-        item = _json_safe(component)
-        if not isinstance(item, dict):
-            item = {"value": item}
-        try:
-            item["toDict"] = component.toDict()
-        except Exception as exc:
-            item["toDict"] = f"<toDict failed: {exc}>"
-        dumped.append(item)
-    return dumped
-
-
-def _build_event_dump(event: AstrMessageEvent) -> dict[str, Any]:
-    message_obj = event.message_obj
-    raw_message = getattr(message_obj, "raw_message", None)
-    bot = getattr(event, "bot", None)
-
-    return {
-        "notice": "bot/client internals and secret-like fields are skipped or redacted to avoid leaking credentials in chat.",
-        "event_class": f"{type(event).__module__}.{type(event).__name__}",
-        "event_repr": _safe_repr(event),
-        "platform_name": event.get_platform_name(),
-        "platform_id": event.get_platform_id(),
-        "unified_msg_origin": event.unified_msg_origin,
-        "getters": _event_getters(event),
-        "event_attrs": _event_public_attrs(event),
-        "event_extra": _json_safe(event.get_extra()),
-        "platform_meta": _json_safe(event.platform_meta),
-        "session": _json_safe(event.session),
-        "message_obj": _json_safe(message_obj),
-        "message_components": _component_dump(event),
-        "raw_message_class": f"{type(raw_message).__module__}.{type(raw_message).__name__}",
-        "raw_message": _json_safe(raw_message),
-        "bot_client": {
-            "class": f"{type(bot).__module__}.{type(bot).__name__}" if bot else None,
-            "repr": _safe_repr(bot) if bot else None,
-            "skipped": True,
-        },
-    }
-
-
-def _chunk_text(text: str, size: int = MAX_TEXT_CHUNK_SIZE) -> list[str]:
-    return [text[i : i + size] for i in range(0, len(text), size)] or [""]
-
-
 @register(
     "astrbot_plugin_buckshot_roulette",
     "lishining,Codex",
     "QQOfficial 群聊多人无庄家恶魔轮盘插件",
-    "1.2.1",
+    "1.2.2",
 )
-class QQOfficialUtilPlugin(Star):
+class BuckshotRoulettePlugin(Star):
     def __init__(self, context: Context, config: AstrBotConfig | None = None):
         super().__init__(context)
         self.config = config or {}
-        self.location_data: dict = {}
-        self.location_pool: list[str] = []
-        self.search_region_pool: list[dict[str, str]] = []
-        self._interaction_hook_installed = False
         self.roulette_settings = self._load_roulette_settings_from_config()
         self.roulette_db_path = Path(StarTools.get_data_dir()) / "roulette.db"
         self.roulette_db = RouletteDBManager(self.roulette_db_path)
         self.roulette_user_repo = RouletteUserRepo(self.roulette_db)
         self.roulette_games: dict[str, RouletteGame] = {}
         self.roulette_locks: dict[str, asyncio.Lock] = {}
-        self._load_location_data()
 
     async def initialize(self):
         await self.roulette_db.init_db()
-        self._install_interaction_hook()
-
-    @filter.on_platform_loaded()
-    async def _on_platform_loaded(self):
-        self._install_interaction_hook()
-
-    def _install_interaction_hook(self) -> None:
-        patched = False
-        seen_platforms = 0
-        for platform in self.context.platform_manager.platform_insts:
-            if platform.meta().name not in QQOFFICIAL_PLATFORMS:
-                continue
-            seen_platforms += 1
-            client = getattr(platform, "client", None)
-            if client is None:
-                continue
-            self._ensure_interaction_intent(client)
-            if self._patch_qqofficial_client(platform, client):
-                patched = True
-        if patched:
-            self._interaction_hook_installed = True
-        elif seen_platforms == 0:
-            logger.warning("[QQOfficialUtil] 未发现已加载的 QQOfficial 平台，暂无法安装按钮回调 hook。")
-
-    def _install_interaction_hook_from_event(self, event: AstrMessageEvent) -> None:
-        client = getattr(event, "bot", None)
-        if client is None:
-            logger.warning("[QQOfficialUtil] 当前事件缺少 bot client，无法兜底安装按钮回调 hook。")
-            return
-
-        self._ensure_interaction_intent(client)
-        platform = QQOfficialEventPlatformProxy(
-            client,
-            event.get_platform_name() if hasattr(event, "get_platform_name") else None,
-        )
-        if self._patch_qqofficial_client(platform, client):
-            self._interaction_hook_installed = True
-
-    def _ensure_interaction_intent(self, client: Any) -> None:
-        current_intents = getattr(client, "intents", None)
-        if not isinstance(current_intents, int):
-            logger.warning(
-                "[QQOfficialUtil] 无法确认 interaction intent: client=%s, intents=%r",
-                type(client).__name__,
-                current_intents,
-            )
-            return
-        if current_intents & QQOFFICIAL_INTERACTION_INTENT:
-            logger.info(
-                "[QQOfficialUtil] QQOfficial client 已包含 interaction intent: intents=%s",
-                current_intents,
-            )
-            return
-        client.intents = current_intents | QQOFFICIAL_INTERACTION_INTENT
-        logger.warning(
-            "[QQOfficialUtil] 已为 QQOfficial client 补充 interaction intent: %s -> %s。"
-            "如果 websocket 已连接，需要重启/重连 QQOfficial 平台后才会收到按钮点击事件。",
-            current_intents,
-            client.intents,
-        )
-
-    def _patch_qqofficial_client(self, platform: Any, client: Any) -> bool:
-        if (
-            getattr(client, "_codex_button_hook_installed", False)
-            and getattr(client, "_codex_button_hook_owner", None) == id(self)
-        ):
-            logger.info(
-                "[QQOfficialUtil] QQOfficial interaction hook 已安装在当前插件实例: client=%s",
-                type(client).__name__,
-            )
-            return False
-
-        plugin = self
-        original = getattr(
-            client,
-            "_codex_button_hook_original",
-            getattr(client, "on_interaction_create", None),
-        )
-
-        async def on_interaction_create(interaction: Interaction):
-            logger.info(
-                "[QQOfficialUtil] 收到按钮回调原始事件: %s",
-                _debug_json(interaction),
-            )
-            await plugin._handle_qqofficial_interaction(platform, interaction)
-            if original and original is not on_interaction_create:
-                maybe = original(interaction)
-                if asyncio.iscoroutine(maybe):
-                    await maybe
-
-        client.on_interaction_create = on_interaction_create
-        client._codex_button_hook_installed = True
-        client._codex_button_hook_owner = id(self)
-        client._codex_button_hook_original = original
-        logger.info(
-            "[QQOfficialUtil] 已安装 QQOfficial interaction hook: platform=%r, client=%s, original_handler=%s",
-            platform.meta().name if hasattr(platform, "meta") else None,
-            type(client).__name__,
-            bool(original),
-        )
-        return True
-
-    async def _handle_qqofficial_interaction(
-        self,
-        platform: Any,
-        interaction: Interaction,
-    ) -> None:
-        context = _extract_interaction_context(interaction)
-        if not context or not context.interaction_id:
-            logger.warning("[QQOfficialUtil] 忽略按钮回调：缺少 interaction_id。")
-            return
-        logger.info(
-            "[QQOfficialUtil] 解析按钮回调上下文: %s",
-            _debug_json(_interaction_to_debug_dict(context)),
-        )
-        if context.button_id not in {BUTTON_A_ID, BUTTON_B_ID} and context.button_data not in {
-            BUTTON_A_DATA,
-            BUTTON_B_DATA,
-        }:
-            logger.info(
-                "[QQOfficialUtil] 忽略非本插件按钮回调: button_id=%r, button_data=%r",
-                context.button_id,
-                context.button_data,
-            )
-            return
-
-        try:
-            ack_ret = await platform.client.api.on_interaction_result(context.interaction_id, 0)
-            logger.info(
-                "[QQOfficialUtil] 按钮回调 ACK 成功: interaction_id=%s, ret=%s",
-                context.interaction_id,
-                _debug_json(ack_ret),
-            )
-        except Exception as exc:
-            logger.warning(f"[QQOfficialUtil] interaction ACK 失败: {exc}")
-
-        await self._reply_button_press(platform, context)
-
-    async def _reply_button_press(self, platform: Any, context: QQOfficialInteractionContext) -> None:
-        text = _build_button_reply_text(context.button_id, context.button_data)
-        payload = _build_button_reply_payload(text)
-        raw_scene = (context.scene or "").lower()
-        try:
-            _add_passive_reply_context(payload, event_id=context.interaction_id)
-            if raw_scene == "group" and context.group_openid:
-                logger.info(
-                    "[QQOfficialUtil] 准备回复按钮回调(group): group_openid=%s, payload=%s",
-                    context.group_openid,
-                    _debug_json(payload),
-                )
-                ret = await platform.client.api.post_group_message(
-                    group_openid=context.group_openid,
-                    **payload,
-                )
-                logger.info("[QQOfficialUtil] 按钮回调回复成功(group): ret=%s", _debug_json(ret))
-                return
-            if raw_scene == "c2c" and context.user_openid:
-                logger.info(
-                    "[QQOfficialUtil] 准备回复按钮回调(c2c): openid=%s, payload=%s",
-                    context.user_openid,
-                    _debug_json(payload),
-                )
-                ret = await platform.client.api.post_c2c_message(
-                    openid=context.user_openid,
-                    **payload,
-                )
-                logger.info("[QQOfficialUtil] 按钮回调回复成功(c2c): ret=%s", _debug_json(ret))
-                return
-            logger.warning(
-                f"[QQOfficialUtil] 按钮回调场景不受支持: scene={context.scene!r}, chat_type={context.chat_type!r}"
-            )
-        except Exception as exc:
-            logger.warning(f"[QQOfficialUtil] 回复按钮回调失败: {exc}")
 
     @filter.platform_adapter_type(
         filter.PlatformAdapterType.QQOFFICIAL
         | filter.PlatformAdapterType.QQOFFICIAL_WEBHOOK
     )
     @filter.event_message_type(filter.EventMessageType.GROUP_MESSAGE)
-    async def qqofficial_roulette(self, event: AstrMessageEvent):
+    @filter.command("轮盘")
+    async def roulette_help_command(self, event: AstrMessageEvent):
+        async for result in self._handle_registered_roulette(event):
+            yield result
+
+    @filter.platform_adapter_type(
+        filter.PlatformAdapterType.QQOFFICIAL
+        | filter.PlatformAdapterType.QQOFFICIAL_WEBHOOK
+    )
+    @filter.event_message_type(filter.EventMessageType.GROUP_MESSAGE)
+    @filter.command("轮盘帮助")
+    async def roulette_help_named_command(self, event: AstrMessageEvent):
+        async for result in self._handle_registered_roulette(event):
+            yield result
+
+    @filter.platform_adapter_type(
+        filter.PlatformAdapterType.QQOFFICIAL
+        | filter.PlatformAdapterType.QQOFFICIAL_WEBHOOK
+    )
+    @filter.event_message_type(filter.EventMessageType.GROUP_MESSAGE)
+    @filter.command("轮盘绑定")
+    async def roulette_bind_command(self, event: AstrMessageEvent):
+        async for result in self._handle_registered_roulette(event):
+            yield result
+
+    @filter.platform_adapter_type(
+        filter.PlatformAdapterType.QQOFFICIAL
+        | filter.PlatformAdapterType.QQOFFICIAL_WEBHOOK
+    )
+    @filter.event_message_type(filter.EventMessageType.GROUP_MESSAGE)
+    @filter.command("轮盘我的名字")
+    async def roulette_my_name_command(self, event: AstrMessageEvent):
+        async for result in self._handle_registered_roulette(event):
+            yield result
+
+    @filter.platform_adapter_type(
+        filter.PlatformAdapterType.QQOFFICIAL
+        | filter.PlatformAdapterType.QQOFFICIAL_WEBHOOK
+    )
+    @filter.event_message_type(filter.EventMessageType.GROUP_MESSAGE)
+    @filter.command("轮盘改名")
+    async def roulette_rename_command(self, event: AstrMessageEvent):
+        async for result in self._handle_registered_roulette(event):
+            yield result
+
+    @filter.platform_adapter_type(
+        filter.PlatformAdapterType.QQOFFICIAL
+        | filter.PlatformAdapterType.QQOFFICIAL_WEBHOOK
+    )
+    @filter.event_message_type(filter.EventMessageType.GROUP_MESSAGE)
+    @filter.command("轮盘创建")
+    async def roulette_create_command(self, event: AstrMessageEvent):
+        async for result in self._handle_registered_roulette(event):
+            yield result
+
+    @filter.platform_adapter_type(
+        filter.PlatformAdapterType.QQOFFICIAL
+        | filter.PlatformAdapterType.QQOFFICIAL_WEBHOOK
+    )
+    @filter.event_message_type(filter.EventMessageType.GROUP_MESSAGE)
+    @filter.command("轮盘加入")
+    async def roulette_join_command(self, event: AstrMessageEvent):
+        async for result in self._handle_registered_roulette(event):
+            yield result
+
+    @filter.platform_adapter_type(
+        filter.PlatformAdapterType.QQOFFICIAL
+        | filter.PlatformAdapterType.QQOFFICIAL_WEBHOOK
+    )
+    @filter.event_message_type(filter.EventMessageType.GROUP_MESSAGE)
+    @filter.command("轮盘退出")
+    async def roulette_leave_command(self, event: AstrMessageEvent):
+        async for result in self._handle_registered_roulette(event):
+            yield result
+
+    @filter.platform_adapter_type(
+        filter.PlatformAdapterType.QQOFFICIAL
+        | filter.PlatformAdapterType.QQOFFICIAL_WEBHOOK
+    )
+    @filter.event_message_type(filter.EventMessageType.GROUP_MESSAGE)
+    @filter.command("轮盘设置")
+    async def roulette_settings_command(self, event: AstrMessageEvent):
+        async for result in self._handle_registered_roulette(event):
+            yield result
+
+    @filter.platform_adapter_type(
+        filter.PlatformAdapterType.QQOFFICIAL
+        | filter.PlatformAdapterType.QQOFFICIAL_WEBHOOK
+    )
+    @filter.event_message_type(filter.EventMessageType.GROUP_MESSAGE)
+    @filter.command("轮盘开始")
+    async def roulette_start_command(self, event: AstrMessageEvent):
+        async for result in self._handle_registered_roulette(event):
+            yield result
+
+    @filter.platform_adapter_type(
+        filter.PlatformAdapterType.QQOFFICIAL
+        | filter.PlatformAdapterType.QQOFFICIAL_WEBHOOK
+    )
+    @filter.event_message_type(filter.EventMessageType.GROUP_MESSAGE)
+    @filter.command("轮盘状态")
+    async def roulette_status_command(self, event: AstrMessageEvent):
+        async for result in self._handle_registered_roulette(event):
+            yield result
+
+    @filter.platform_adapter_type(
+        filter.PlatformAdapterType.QQOFFICIAL
+        | filter.PlatformAdapterType.QQOFFICIAL_WEBHOOK
+    )
+    @filter.event_message_type(filter.EventMessageType.GROUP_MESSAGE)
+    @filter.command("轮盘结束")
+    async def roulette_end_command(self, event: AstrMessageEvent):
+        async for result in self._handle_registered_roulette(event):
+            yield result
+
+    @filter.platform_adapter_type(
+        filter.PlatformAdapterType.QQOFFICIAL
+        | filter.PlatformAdapterType.QQOFFICIAL_WEBHOOK
+    )
+    @filter.event_message_type(filter.EventMessageType.GROUP_MESSAGE)
+    @filter.command("轮盘开枪")
+    async def roulette_shoot_command(self, event: AstrMessageEvent):
+        async for result in self._handle_registered_roulette(event):
+            yield result
+
+    @filter.platform_adapter_type(
+        filter.PlatformAdapterType.QQOFFICIAL
+        | filter.PlatformAdapterType.QQOFFICIAL_WEBHOOK
+    )
+    @filter.event_message_type(filter.EventMessageType.GROUP_MESSAGE)
+    @filter.command("轮盘道具")
+    async def roulette_item_command(self, event: AstrMessageEvent):
+        async for result in self._handle_registered_roulette(event):
+            yield result
+
+    async def _handle_registered_roulette(self, event: AstrMessageEvent):
         command_text = self._extract_roulette_command_text(event)
         if command_text is None:
             return
@@ -1117,14 +544,14 @@ class QQOfficialUtilPlugin(Star):
                 game = self.roulette_games.get(session_id)
                 with_keyboard = False
             except Exception as exc:
-                logger.exception("[QQOfficialUtil] 轮盘指令处理失败: %s", exc)
+                logger.exception("[BuckshotRoulette] 轮盘指令处理失败: %s", exc)
                 message = f"轮盘处理失败：{exc}"
                 game = self.roulette_games.get(session_id)
                 with_keyboard = False
 
         async for result in self._send_qqofficial_group_markdown(
             event,
-            command_name="qqofficial_roulette",
+            command_name="roulette",
             payload=_build_roulette_message_payload(
                 message,
                 game,
@@ -1135,113 +562,6 @@ class QQOfficialUtilPlugin(Star):
             ),
         ):
             yield result
-        event.stop_event()
-
-    async def _send_qqofficial_button_message(
-        self,
-        event: AstrMessageEvent,
-        *,
-        command_name: str,
-        payload: dict[str, Any],
-    ):
-        logger.info(
-            "[QQOfficialUtil] %s 触发: event_class=%s.%s, platform=%r, message=%r",
-            command_name,
-            type(event).__module__,
-            type(event).__name__,
-            event.get_platform_name() if hasattr(event, "get_platform_name") else None,
-            event.get_message_str() if hasattr(event, "get_message_str") else None,
-        )
-        if not _is_qqofficial_message_event(event):
-            logger.warning(
-                "[QQOfficialUtil] %s 拒绝：非 QQOfficial 事件 event_class=%s.%s",
-                command_name,
-                type(event).__module__,
-                type(event).__name__,
-            )
-            yield event.plain_result("该指令仅支持 QQOfficialMessageEvent / QQOfficialWebhookMessageEvent。")
-            return
-
-        self._install_interaction_hook_from_event(event)
-
-        raw_message = getattr(event.message_obj, "raw_message", None)
-        if raw_message is None:
-            logger.warning(
-                "[QQOfficialUtil] %s 拒绝：message_obj 缺少 raw_message。message_obj=%s",
-                command_name,
-                _debug_json(getattr(event, "message_obj", None)),
-            )
-            yield event.plain_result("未找到 QQOfficial 原始消息对象，无法发送按钮。")
-            return
-
-        debug_context = _build_button_debug_context(raw_message, event.message_obj)
-        _add_passive_reply_context(
-            payload,
-            msg_id=_extract_message_reference_id(raw_message, event.message_obj),
-            msg_seq=getattr(raw_message, "msg_seq", None),
-        )
-        logger.info(
-            "[QQOfficialUtil] %s 原始上下文: %s",
-            command_name,
-            _debug_json(debug_context),
-        )
-        logger.info(
-            "[QQOfficialUtil] %s 最终发送 payload: %s",
-            command_name,
-            _debug_json(payload),
-        )
-        if not payload.get("msg_id") and not payload.get("event_id"):
-            logger.warning(
-                "[QQOfficialUtil] %s 未找到 msg_id/event_id，平台可能按主动消息处理。",
-                command_name,
-            )
-        try:
-            if isinstance(raw_message, botpy_message.GroupMessage):
-                logger.info(
-                    "[QQOfficialUtil] %s 使用 group 接口发送: group_openid=%s",
-                    command_name,
-                    raw_message.group_openid,
-                )
-                ret = await event.bot.api.post_group_message(
-                    group_openid=raw_message.group_openid,
-                    **payload,
-                )
-                logger.info(
-                    "[QQOfficialUtil] %s group API 返回: %s",
-                    command_name,
-                    _debug_json(ret),
-                )
-            elif isinstance(raw_message, botpy_message.C2CMessage):
-                logger.info(
-                    "[QQOfficialUtil] %s 使用 c2c 接口发送: openid=%s",
-                    command_name,
-                    raw_message.author.user_openid,
-                )
-                ret = await event.bot.api.post_c2c_message(
-                    openid=raw_message.author.user_openid,
-                    **payload,
-                )
-                logger.info(
-                    "[QQOfficialUtil] %s c2c API 返回: %s",
-                    command_name,
-                    _debug_json(ret),
-                )
-            else:
-                logger.warning(
-                    "[QQOfficialUtil] %s 不支持的 raw_message 类型: %s",
-                    command_name,
-                    debug_context["raw_message_class"],
-                )
-                yield event.plain_result(
-                    "该指令仅支持群聊和 C2C 消息类型。"
-                )
-                return
-        except Exception as exc:
-            logger.exception("[QQOfficialUtil] %s 发送按钮消息失败: %s", command_name, exc)
-            yield event.plain_result(f"发送按钮消息失败：{exc}")
-            return
-
-        logger.info("[QQOfficialUtil] %s 发送流程结束，停止事件传播。", command_name)
         event.stop_event()
 
     async def _handle_roulette_command(
@@ -1351,11 +671,7 @@ class QQOfficialUtilPlugin(Star):
                 return f"{player_name} 退出了房间，房间已关闭。", None, False
             if game.owner_id == platform_user_id:
                 game.owner_id = game.players[0].user_id
-            return (
-                f"{player_name} 退出了房间（{len(game.players)}/{MAX_PLAYERS}）。",
-                game,
-                True,
-            )
+            return f"{player_name} 退出了房间（{len(game.players)}/{MAX_PLAYERS}）。", game, True
         if action == "开始":
             if platform_user_id != game.owner_id:
                 return "只有房主可以开始本局。", game, False
@@ -1388,11 +704,7 @@ class QQOfficialUtilPlugin(Star):
                 actor = game.require_playing_actor(platform_user_id)
                 if ITEM_HANDCUFFS not in actor.items:
                     raise RouletteGameError(f"你没有道具：{ITEM_HANDCUFFS}")
-                return (
-                    self._roulette_handcuffs_target_text(game),
-                    game,
-                    True,
-                )
+                return self._roulette_handcuffs_target_text(game), game, True
             if len(args) >= 2:
                 try:
                     target_number = int(args[1])
@@ -1430,7 +742,7 @@ class QQOfficialUtilPlugin(Star):
             msg_seq=getattr(raw_message, "msg_seq", None),
         )
         logger.info(
-            "[QQOfficialUtil] %s 发送轮盘群聊 payload: %s",
+            "[BuckshotRoulette] %s 发送轮盘群聊 payload: %s",
             command_name,
             _debug_json(payload),
         )
@@ -1440,7 +752,7 @@ class QQOfficialUtilPlugin(Star):
                 **payload,
             )
         except Exception as exc:
-            logger.exception("[QQOfficialUtil] %s 发送轮盘消息失败: %s", command_name, exc)
+            logger.exception("[BuckshotRoulette] %s 发送轮盘消息失败: %s", command_name, exc)
             yield event.plain_result(f"发送轮盘消息失败：{exc}")
 
     def _extract_roulette_command_text(self, event: AstrMessageEvent) -> str | None:
@@ -1488,7 +800,7 @@ class QQOfficialUtilPlugin(Star):
         platform_user_id = self._extract_platform_user_id(event)
         if not group_openid or not platform_user_id:
             logger.warning(
-                "[QQOfficialUtil] 轮盘身份解析失败: group_openid=%r, platform_user_id=%r",
+                "[BuckshotRoulette] 轮盘身份解析失败: group_openid=%r, platform_user_id=%r",
                 group_openid,
                 platform_user_id,
             )
@@ -1642,7 +954,7 @@ class QQOfficialUtilPlugin(Star):
             if hasattr(self.config, "save_config"):
                 self.config.save_config()
         except Exception:
-            logger.warning("[QQOfficialUtil] 无法写回轮盘设置到插件配置对象。")
+            logger.warning("[BuckshotRoulette] 无法写回轮盘设置到插件配置对象。")
 
     def _get_config_section(self, key: str) -> dict[str, Any]:
         section = self.config.get(key, {}) if hasattr(self.config, "get") else {}
@@ -1682,13 +994,6 @@ class QQOfficialUtilPlugin(Star):
                 return True
         return False
 
-    def _extract_box_command_text(self, event: AstrMessageEvent) -> str | None:
-        if event.get_platform_name() not in QQOFFICIAL_PLATFORMS:
-            return None
-        if not self._starts_with_bot_mention(event):
-            return None
-        return event.get_message_str() or ""
-
     def _starts_with_bot_mention(self, event: AstrMessageEvent) -> bool:
         for component in event.get_messages():
             if isinstance(component, Comp.Plain) and not component.text.strip():
@@ -1704,433 +1009,16 @@ class QQOfficialUtilPlugin(Star):
             return True
         return mentioned_id in self._get_bot_self_ids(event)
 
-    def _parse_box_target(self, command_text: str) -> str | None:
-        match = BOX_COMMAND_PATTERN.fullmatch(command_text)
-        if not match:
-            return None
-        qq = match.group(1).strip()
-        if not self._validate_qq(qq):
-            return None
-        return qq
-
-    async def generate_fake_dox(self, target_qq: str) -> tuple[str, str | None]:
-        location = await self._generate_location()
-        output = (
-            "身份检索完成\n"
-            f"账号：{target_qq}\n"
-            f"手机：{self._generate_phone()}\n"
-            f"IP地址：{self._generate_ip()}\n"
-            f"物理地址：{location.address}\n"
-            "说明：以上信息均为随机生成，仅供娱乐。"
-        )
-        return output, location.map_url
-
-    def _load_location_data(self) -> None:
-        data_path = Path(__file__).resolve().parent / "china_clean_v2.json"
-        try:
-            if not data_path.exists():
-                logger.warning(f"[QQOfficialUtil] 未找到地理位置文件：{data_path}")
-                return
-
-            with data_path.open("r", encoding="utf-8") as file:
-                self.location_data = json.load(file)
-
-            if not isinstance(self.location_data, dict):
-                logger.warning("[QQOfficialUtil] 地理位置数据格式无效，应为字典")
-                self.location_data = {}
-                return
-
-            self.location_pool = self._flatten_locations(self.location_data)
-            self.search_region_pool = self._flatten_search_regions(self.location_data)
-            logger.info(
-                f"[QQOfficialUtil] 已加载 {len(self.location_pool)} 条地理位置数据"
-            )
-        except json.JSONDecodeError as exc:
-            logger.error(f"[QQOfficialUtil] 解析地理位置 JSON 失败：{exc}")
-            self.location_data = {}
-            self.location_pool = []
-            self.search_region_pool = []
-        except Exception as exc:
-            logger.error(f"[QQOfficialUtil] 加载地理位置数据失败：{exc}")
-            self.location_data = {}
-            self.location_pool = []
-            self.search_region_pool = []
-
-    def _flatten_locations(self, data: dict) -> list[str]:
-        locations: list[str] = []
-        for provinces in data.values():
-            if not isinstance(provinces, dict):
-                continue
-
-            for province_name, cities in provinces.items():
-                if not isinstance(cities, dict):
-                    locations.append(str(province_name))
-                    continue
-
-                for city_name, districts in cities.items():
-                    if not isinstance(districts, dict) or not districts:
-                        locations.append(f"{province_name}{city_name}")
-                        continue
-
-                    for district_name, streets in districts.items():
-                        if not isinstance(streets, dict) or not streets:
-                            locations.append(
-                                f"{province_name}{city_name}{district_name}"
-                            )
-                            continue
-
-                        for street_name in streets.keys():
-                            locations.append(
-                                f"{province_name}{city_name}{district_name}{street_name}"
-                            )
-
-        return locations
-
-    def _flatten_search_regions(self, data: dict) -> list[dict[str, str]]:
-        regions: list[dict[str, str]] = []
-        for provinces in data.values():
-            if not isinstance(provinces, dict):
-                continue
-
-            for province_name, cities in provinces.items():
-                if not isinstance(cities, dict):
-                    continue
-
-                for city_name, districts in cities.items():
-                    if not isinstance(districts, dict) or not districts:
-                        regions.append(
-                            {
-                                "region": str(city_name),
-                                "prefix": f"{province_name}{city_name}",
-                            }
-                        )
-                        continue
-
-                    for district_name, streets in districts.items():
-                        street_name = self._pick_street_name(streets)
-                        prefix = f"{province_name}{city_name}{district_name}"
-                        if street_name:
-                            prefix += street_name
-                        regions.append(
-                            {
-                                "region": str(city_name),
-                                "prefix": prefix,
-                            }
-                        )
-
-        return regions
-
-    def _pick_street_name(self, streets: object) -> str:
-        if not isinstance(streets, dict) or not streets:
-            return ""
-        return str(random.choice(list(streets.keys())))
-
     def _get_bot_self_ids(self, event: AstrMessageEvent) -> set[str]:
-        self_ids = {BOT_AT_MARKER}
+        candidates = {
+            str(getattr(event.message_obj, "self_id", "") or "").strip(),
+            str(event.get_self_id() if hasattr(event, "get_self_id") else "" or "").strip(),
+        }
         raw_message = getattr(event.message_obj, "raw_message", None)
-        if isinstance(raw_message, dict):
-            self_id = raw_message.get("self_id")
-            if self_id:
-                self_ids.add(str(self_id))
-
-        message_self_id = getattr(event.message_obj, "self_id", None)
-        if message_self_id:
-            self_ids.add(str(message_self_id))
-
-        try:
-            self_id = event.get_self_id()
-        except Exception as exc:
-            logger.debug(f"[QQOfficialUtil] 读取 event.get_self_id 失败：{exc}")
-        else:
-            if self_id:
-                self_ids.add(str(self_id))
-        return self_ids
-
-    def _validate_qq(self, qq: str) -> bool:
-        if not qq or not isinstance(qq, str):
-            return False
-        if not qq.isdigit():
-            logger.warning(f"[QQOfficialUtil] 检测到无效 QQ 格式：{qq}")
-            return False
-        return True
-
-    def _is_user_allowed(self, user_id: str | None) -> bool:
-        if not user_id:
-            return True
-
-        mode = str(self.config.get("user_list_mode", "none")).lower()
-        if mode not in {"whitelist", "blacklist", "none"}:
-            mode = "none"
-        if mode == "none":
-            return True
-
-        user_list = {str(item) for item in self.config.get("user_list", [])}
-        is_in_list = str(user_id) in user_list
-        if mode == "whitelist":
-            return is_in_list
-        if mode == "blacklist":
-            return not is_in_list
-        return True
-
-    def _generate_phone(self) -> str:
-        prefixes = [
-            "130",
-            "131",
-            "132",
-            "133",
-            "135",
-            "136",
-            "137",
-            "138",
-            "139",
-            "150",
-            "151",
-            "152",
-            "155",
-            "156",
-            "157",
-            "158",
-            "159",
-            "166",
-            "177",
-            "180",
-            "181",
-            "182",
-            "183",
-            "184",
-            "185",
-            "186",
-            "187",
-            "188",
-            "189",
-            "198",
-            "199",
-        ]
-        prefix = random.choice(prefixes)
-        suffix = "".join(str(random.randint(0, 9)) for _ in range(8))
-        return f"{prefix}{suffix}"
-
-    def _generate_ip(self) -> str:
-        first = random.choice(
-            [
-                58,
-                61,
-                110,
-                112,
-                113,
-                114,
-                115,
-                116,
-                117,
-                118,
-                119,
-                120,
-                121,
-                122,
-                123,
-                124,
-                125,
-                126,
-                127,
-                172,
-                192,
-            ]
-        )
-        second = random.randint(1, 255)
-        third = random.randint(0, 255)
-        fourth = random.randint(1, 254)
-        return f"{first}.{second}.{third}.{fourth}"
-
-    async def _generate_location(self) -> GeneratedLocation:
-        if not self._is_map_enrichment_enabled():
-            return GeneratedLocation(self._generate_fallback_location())
-
-        api_key = self._get_tencent_map_key()
-        if not api_key:
-            logger.warning("[QQOfficialUtil] 已启用地图增强，但未配置 tencent_map_key")
-            return GeneratedLocation(self._generate_fallback_location())
-
-        region = self._pick_search_region()
-        if not region:
-            logger.warning("[QQOfficialUtil] 未加载到可搜索地区，回退本地随机地址")
-            return GeneratedLocation(self._generate_fallback_location())
-
-        poi = await self._search_random_poi(api_key, region["region"])
-        if not poi:
-            return GeneratedLocation(region["prefix"])
-
-        address = self._format_poi_address(region["prefix"], poi)
-        map_url = self._build_static_map_url(api_key, poi)
-        return GeneratedLocation(address, map_url)
-
-    def _generate_fallback_location(self) -> str:
-        if self.location_pool:
-            return random.choice(self.location_pool)
-        return "四川省成都市金牛区"
-
-    def _is_map_enrichment_enabled(self) -> bool:
-        return bool(self._get_map_config("enable_static_map", False))
-
-    def _get_tencent_map_key(self) -> str:
-        return str(
-            self._get_map_config("tencent_map_key", "")
-            or os.getenv("TENCENT_MAP_KEY")
-            or ""
-        ).strip()
-
-    def _get_tencent_map_sk(self) -> str:
-        return str(
-            self._get_map_config("tencent_map_sk", "")
-            or os.getenv("TENCENT_MAP_SK")
-            or ""
-        ).strip()
-
-    def _pick_search_region(self) -> dict[str, str] | None:
-        if not self.search_region_pool:
-            return None
-        return random.choice(self.search_region_pool)
-
-    async def _search_random_poi(
-        self, api_key: str, region_name: str
-    ) -> dict | None:
-        page_size = self._get_int_config("place_search_page_size", 10, 1, 20)
-        keywords = self._pick_place_keywords_for_search()
-        for keyword in keywords:
-            params = {
-                "key": api_key,
-                "keyword": keyword,
-                "boundary": f"region({region_name},1)",
-                "page_size": str(page_size),
-                "page_index": "1",
-                "output": "json",
-            }
-            url = self._build_tencent_get_url(TENCENT_MAP_PLACE_SEARCH_PATH, params)
-            try:
-                payload = await self._http_get_json(url)
-            except Exception as exc:
-                logger.warning(f"[QQOfficialUtil] 腾讯地图地点搜索失败：{exc}")
-                return None
-
-            if not isinstance(payload, dict) or payload.get("status") != 0:
-                logger.warning(
-                    "[QQOfficialUtil] 腾讯地图地点搜索返回异常："
-                    f"{self._summarize_api_payload(payload)}"
-                )
-                return None
-
-            pois = payload.get("data")
-            if not isinstance(pois, list) or not pois:
-                continue
-            valid_pois = [poi for poi in pois if isinstance(poi, dict)]
-            if valid_pois:
-                return random.choice(valid_pois)
-        return None
-
-    def _pick_place_keywords_for_search(self) -> list[str]:
-        keywords = self._get_map_config("place_search_keywords", DEFAULT_PLACE_KEYWORDS)
-        if not isinstance(keywords, list):
-            keywords = DEFAULT_PLACE_KEYWORDS
-        normalized = [str(item).strip() for item in keywords if str(item).strip()]
-        if not normalized:
-            normalized = DEFAULT_PLACE_KEYWORDS
-        random.shuffle(normalized)
-        retry_count = self._get_int_config(
-            "place_search_retry_keywords", 4, 1, len(normalized)
-        )
-        return normalized[:retry_count]
-
-    async def _http_get_json(self, url: str) -> dict:
-        timeout = self._get_int_config("tencent_api_timeout", 5, 1, 30)
-
-        def _request() -> dict:
-            request = urllib.request.Request(
-                url,
-                headers={"User-Agent": "astrbot-plugin-util-official/1.1"},
-            )
-            with urllib.request.urlopen(request, timeout=timeout) as response:
-                charset = response.headers.get_content_charset() or "utf-8"
-                body = response.read().decode(charset)
-            return json.loads(body)
-
-        return await asyncio.to_thread(_request)
-
-    def _format_poi_address(self, region_prefix: str, poi: dict) -> str:
-        title = str(poi.get("title") or "").strip()
-        address = str(poi.get("address") or "").strip()
-        if address and title:
-            return f"{address}（{title}）"
-        if title:
-            return f"{region_prefix}{title}"
-        return address or region_prefix
-
-    def _build_static_map_url(self, api_key: str, poi: dict) -> str | None:
-        location = poi.get("location")
-        if not isinstance(location, dict):
-            return None
-        lat = location.get("lat")
-        lng = location.get("lng")
-        if lat is None or lng is None:
-            return None
-
-        zoom = self._get_int_config("static_map_zoom", 17, 4, 18)
-        size = str(self._get_map_config("static_map_size", "500x400")).strip() or "500x400"
-        marker_style = (
-            str(self._get_map_config("static_map_marker_style", "size:large|color:red"))
-            .strip()
-            .strip("|")
-        )
-        params = {
-            "key": api_key,
-            "center": f"{lat},{lng}",
-            "zoom": str(zoom),
-            "size": size,
-        }
-        if marker_style:
-            params["markers"] = f"{marker_style}|{lat},{lng}"
-        return self._build_tencent_get_url(TENCENT_MAP_STATIC_PATH, params)
-
-    def _build_tencent_get_url(self, path: str, params: dict[str, str]) -> str:
-        request_params = dict(params)
-        secret_key = self._get_tencent_map_sk()
-        if secret_key:
-            request_params["sig"] = self._sign_tencent_get(path, params, secret_key)
-        query = urllib.parse.urlencode(request_params)
-        return f"{TENCENT_MAP_API_BASE}{path}?{query}"
-
-    def _sign_tencent_get(
-        self, path: str, params: dict[str, str], secret_key: str
-    ) -> str:
-        raw_query = "&".join(f"{key}={params[key]}" for key in sorted(params.keys()))
-        source = f"{path}?{raw_query}{secret_key}"
-        return hashlib.md5(source.encode("utf-8")).hexdigest()
-
-    def _get_map_config(self, key: str, default=None):
-        tencent_map = self.config.get("tencent_map", {})
-        if hasattr(tencent_map, "get"):
-            value = tencent_map.get(key, None)
-            if value is not None:
-                return value
-        return self.config.get(key, default)
-
-    def _summarize_api_payload(self, payload) -> str:
-        if not isinstance(payload, dict):
-            return repr(payload)[:300]
-        summary = {
-            "status": payload.get("status"),
-            "message": payload.get("message"),
-            "count": payload.get("count"),
-            "request_id": payload.get("request_id"),
-        }
-        return json.dumps(summary, ensure_ascii=False)
-
-    def _get_int_config(
-        self, key: str, default: int, minimum: int, maximum: int
-    ) -> int:
-        try:
-            value = int(self._get_map_config(key, default))
-        except (TypeError, ValueError):
-            return default
-        return max(minimum, min(maximum, value))
+        bot = getattr(raw_message, "bot", None)
+        if bot is not None:
+            candidates.add(str(getattr(bot, "id", "") or "").strip())
+        return {candidate for candidate in candidates if candidate}
 
     async def terminate(self):
         await self.roulette_db.close()
