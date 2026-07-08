@@ -6,7 +6,6 @@ import re
 from pathlib import Path
 from typing import Any
 
-import botpy.message as botpy_message
 from botpy.types import inline as qinline
 from botpy.types.message import MarkdownPayload
 
@@ -360,7 +359,7 @@ def _is_qqofficial_message_event(event: AstrMessageEvent) -> bool:
     "astrbot_plugin_buckshot_roulette",
     "lishining,Codex",
     "QQOfficial 群聊多人无庄家恶魔轮盘插件",
-    "1.2.2",
+    "1.2.3",
 )
 class BuckshotRoulettePlugin(Star):
     def __init__(self, context: Context, config: AstrBotConfig | None = None):
@@ -840,7 +839,7 @@ class BuckshotRoulettePlugin(Star):
             "轮盘绑定 昵称 / 轮盘我的名字 / 轮盘改名 新昵称\n"
             "轮盘创建 / 轮盘加入 / 轮盘退出 / 轮盘设置 / 轮盘开始 / 轮盘状态 / 轮盘结束\n"
             "轮盘开枪 自己 / 轮盘开枪 编号\n"
-            "轮盘道具 啤酒|香烟|手锯|放大镜|过期药|电话|换向器 / 轮盘道具 手铐 编号"
+            "轮盘道具 啤酒|香烟|锯子|放大镜|过期药|电话|换向器 / 轮盘道具 手铐 编号"
         )
 
     def _handle_roulette_settings_command(self, settings: RouletteSettings, args: list[str]) -> str:
