@@ -1,6 +1,8 @@
 name: astrbot_plugin_buckshot_roulette
-display_name: 恶魔轮盘 QQOfficial
-desc: QQOfficial 群聊多人无庄家恶魔轮盘插件
-version: v1.2.6
+display_name: "恶魔轮盘 QQOfficial"
+desc: "QQOfficial 群聊多人无庄家恶魔轮盘插件"
+version: v1.2.7
 author: lishining,Codex
-repo: "https://github.com/Li-shi-ling/astrbot_plugin_buckshot_roulette"
+repo: https://github.com/Li-shi-ling/astrbot_plugin_buckshot_roulette
+support_platforms:
+  - qq_official
