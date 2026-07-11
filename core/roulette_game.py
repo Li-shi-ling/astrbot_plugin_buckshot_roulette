@@ -17,7 +17,7 @@ ITEM_HANDCUFFS = "手铐"
 ITEM_MAGNIFIER = "放大镜"
 ITEM_EXPIRED_MEDICINE = "过期药"
 ITEM_PHONE = "电话"
-ITEM_INVERTER = "换向器"
+ITEM_INVERTER = "转变器"
 ITEM_POOL = [
     ITEM_BEER,
     ITEM_CIGARETTE,
@@ -219,7 +219,7 @@ class RouletteGame:
         actor = self.require_playing_actor(actor_id)
         item_name = self.normalize_item_name(item_name)
         if item_name not in ITEM_POOL:
-            raise RouletteGameError("未知道具。可用：啤酒、香烟、锯子、手铐、放大镜、过期药、电话、换向器。")
+            raise RouletteGameError("未知道具。可用：啤酒、香烟、锯子、手铐、放大镜、过期药、电话、转变器。")
         if item_name not in actor.items:
             raise RouletteGameError(f"你没有道具：{item_name}")
 
@@ -292,7 +292,7 @@ class RouletteGame:
             self.shell_queue[0] = (
                 SHELL_BLANK if self.shell_queue[0] == SHELL_LIVE else SHELL_LIVE
             )
-            lines.append(f"{actor.display_name} 使用换向器，当前弹已反转。")
+            lines.append(f"{actor.display_name} 使用转变器，当前弹已反转。")
 
         ended = self._append_finish_or_reload(lines)
         if self.phase == "playing":
@@ -313,6 +313,8 @@ class RouletteGame:
             "药": ITEM_EXPIRED_MEDICINE,
             "过期药": ITEM_EXPIRED_MEDICINE,
             "电话": ITEM_PHONE,
+            "转变器": ITEM_INVERTER,
+            "转向器": ITEM_INVERTER,
             "换向器": ITEM_INVERTER,
             "逆转器": ITEM_INVERTER,
         }
@@ -320,10 +322,10 @@ class RouletteGame:
 
     def apply_starting_hp(self) -> None:
         self.settings.normalize()
+        hp = self.settings.hp_max
+        if self.settings.random_hp:
+            hp = self.rng.randint(self.settings.hp_min, self.settings.hp_max)
         for player in self.players:
-            hp = self.settings.hp_max
-            if self.settings.random_hp:
-                hp = self.rng.randint(self.settings.hp_min, self.settings.hp_max)
             player.max_hp = hp
             player.hp = hp
 

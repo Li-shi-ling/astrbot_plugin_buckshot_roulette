@@ -268,7 +268,7 @@ def _build_roulette_settings_keyboard(settings: RouletteSettings | None) -> qinl
                 },
                 {
                     "buttons": [
-                        _build_roulette_button("roulette_room_status", "房间", "轮盘状态"),
+                        _build_roulette_button("roulette_create", "轮盘创建", "轮盘创建"),
                         _build_roulette_button("roulette_start", "开始", "轮盘开始"),
                     ]
                 },
@@ -285,6 +285,12 @@ def _build_roulette_menu_keyboard() -> qinline.Keyboard:
                     "buttons": [
                         _build_roulette_button("roulette_menu_create", "房间创建", "轮盘创建"),
                         _build_roulette_button("roulette_menu_settings", "游戏设置", "轮盘设置"),
+                    ]
+                },
+                {
+                    "buttons": [
+                        _build_roulette_button("roulette_menu_help", "轮盘帮助", "轮盘帮助"),
+                        _build_roulette_button("roulette_menu_items", "轮盘道具查看", "轮盘道具查看"),
                     ]
                 }
             ]
@@ -310,7 +316,16 @@ def _format_roulette_markdown(text: str) -> str:
         if not stripped:
             formatted.append("")
             continue
-        if stripped in {"恶魔轮盘状态", "恶魔轮盘指令：", "恶魔轮盘指令:", "轮盘设置", "轮盘菜单", "选择手铐目标"}:
+        if stripped in {
+            "恶魔轮盘状态",
+            "恶魔轮盘玩法帮助：",
+            "恶魔轮盘玩法帮助:",
+            "道具效果：",
+            "道具效果:",
+            "轮盘设置",
+            "轮盘菜单",
+            "选择手铐目标",
+        }:
             formatted.append(f"## {stripped.rstrip('：:')}")
         elif stripped.startswith("当前弹队列："):
             formatted.append(f"**当前弹队列**：{stripped.removeprefix('当前弹队列：')}")
@@ -415,6 +430,16 @@ class BuckshotRoulettePlugin(Star):
     @filter.event_message_type(filter.EventMessageType.GROUP_MESSAGE)
     @filter.command("轮盘帮助")
     async def roulette_help_named_command(self, event: AstrMessageEvent):
+        async for result in self._handle_registered_roulette(event):
+            yield result
+
+    @filter.platform_adapter_type(
+        filter.PlatformAdapterType.QQOFFICIAL
+        | filter.PlatformAdapterType.QQOFFICIAL_WEBHOOK
+    )
+    @filter.event_message_type(filter.EventMessageType.GROUP_MESSAGE)
+    @filter.command("轮盘道具查看")
+    async def roulette_item_help_command(self, event: AstrMessageEvent):
         async for result in self._handle_registered_roulette(event):
             yield result
 
@@ -627,6 +652,8 @@ class BuckshotRoulettePlugin(Star):
 
         if action in {"帮助", "help"}:
             return self._roulette_help_text(), self.roulette_games.get(session_id), False
+        if action == "道具查看":
+            return self._roulette_item_help_text(), self.roulette_games.get(session_id), False
         if action in {"绑定", "改名"}:
             if not args:
                 raise ValueError(f"请提供昵称，例如：轮盘{action} 玩家名")
@@ -880,11 +907,25 @@ class BuckshotRoulettePlugin(Star):
 
     def _roulette_help_text(self) -> str:
         return (
-            "恶魔轮盘指令：\n"
+            "恶魔轮盘玩法帮助：\n"
             "轮盘绑定 昵称 / 轮盘我的名字 / 轮盘改名 新昵称\n"
             "轮盘创建 / 轮盘加入 / 轮盘退出 / 轮盘设置 / 轮盘开始 / 轮盘状态 / 轮盘结束\n"
             "轮盘开枪 自己 / 轮盘开枪 编号\n"
-            "轮盘道具 啤酒|香烟|锯子|放大镜|过期药|电话|换向器 / 轮盘道具 手铐 编号"
+            "轮盘道具 啤酒|香烟|锯子|放大镜|过期药|电话|转变器 / 轮盘道具 手铐 编号\n"
+            "发送“轮盘道具查看”查看全部道具效果。"
+        )
+
+    def _roulette_item_help_text(self) -> str:
+        return (
+            "道具效果：\n"
+            "啤酒：移除当前第一发子弹，并公开它的类型。\n"
+            "香烟：恢复 1 点血量，但不能超过最大血量。\n"
+            "锯子：下一发实弹伤害增加 1；若为空弹则效果消失。\n"
+            "手铐：指定一名其他玩家，使其跳过下一次行动。\n"
+            "放大镜：查看当前第一发是实弹还是空弹。\n"
+            "过期药：随机恢复 2 点血量或失去 1 点血量。\n"
+            "电话：随机查看弹队列中某一发子弹的类型。\n"
+            "转变器：反转当前第一发子弹的类型。"
         )
 
     def _handle_roulette_settings_command(self, settings: RouletteSettings, args: list[str]) -> str:
