@@ -292,6 +292,15 @@ def _build_roulette_menu_keyboard() -> qinline.Keyboard:
                         _build_roulette_button("roulette_menu_help", "轮盘帮助", "轮盘帮助"),
                         _build_roulette_button("roulette_menu_items", "轮盘道具查看", "轮盘道具查看"),
                     ]
+                },
+                {
+                    "buttons": [
+                        _build_roulette_button(
+                            "roulette_menu_bind_name",
+                            "名称绑定",
+                            "名称绑定 [名称]",
+                        ),
+                    ]
                 }
             ]
         }
@@ -301,7 +310,13 @@ def _build_roulette_menu_keyboard() -> qinline.Keyboard:
 def _build_roulette_menu_payload() -> dict[str, Any]:
     return {
         "msg_type": 2,
-        "markdown": MarkdownPayload(content=_format_roulette_markdown("轮盘菜单")),
+        "markdown": MarkdownPayload(
+            content=_format_roulette_markdown(
+                "轮盘菜单\n"
+                "请先使用名称绑定按钮绑定自己的名称。\n"
+                "示例：@bot 名称绑定 玩家一"
+            )
+        ),
         "keyboard": _build_roulette_menu_keyboard(),
     }
 
@@ -460,6 +475,16 @@ class BuckshotRoulettePlugin(Star):
     @filter.event_message_type(filter.EventMessageType.GROUP_MESSAGE)
     @filter.command("轮盘绑定")
     async def roulette_bind_command(self, event: AstrMessageEvent):
+        async for result in self._handle_registered_roulette(event):
+            yield result
+
+    @filter.platform_adapter_type(
+        filter.PlatformAdapterType.QQOFFICIAL
+        | filter.PlatformAdapterType.QQOFFICIAL_WEBHOOK
+    )
+    @filter.event_message_type(filter.EventMessageType.GROUP_MESSAGE)
+    @filter.command("名称绑定")
+    async def roulette_bind_name_command(self, event: AstrMessageEvent):
         async for result in self._handle_registered_roulette(event):
             yield result
 
@@ -643,6 +668,8 @@ class BuckshotRoulettePlugin(Star):
         event: AstrMessageEvent,
     ) -> tuple[str, RouletteGame | None, bool]:
         stripped_command = command_text.strip()
+        if stripped_command.startswith("名称绑定"):
+            stripped_command = f"{ROULETTE_COMMAND_PREFIX}绑定{stripped_command.removeprefix('名称绑定')}"
         if not stripped_command.startswith(ROULETTE_COMMAND_PREFIX):
             return self._roulette_help_text(), self.roulette_games.get(session_id), False
         remainder = stripped_command[len(ROULETTE_COMMAND_PREFIX) :].strip()
@@ -655,7 +682,7 @@ class BuckshotRoulettePlugin(Star):
         if action == "道具查看":
             return self._roulette_item_help_text(), self.roulette_games.get(session_id), False
         if action in {"绑定", "改名"}:
-            if not args:
+            if not args or args == ["[名称]"]:
                 raise ValueError(f"请提供昵称，例如：轮盘{action} 玩家名")
             display_name = validate_display_name(" ".join(args))
             profile = await self.roulette_user_repo.upsert_profile(
@@ -833,12 +860,14 @@ class BuckshotRoulettePlugin(Star):
             return None
         text = event.get_message_str() or ""
         stripped = text.strip()
-        if stripped.startswith(ROULETTE_COMMAND_PREFIX):
+        if stripped.startswith(ROULETTE_COMMAND_PREFIX) or stripped.startswith("名称绑定"):
             return stripped
         return None
 
     def _is_roulette_keyboardless_error_command(self, command_text: str) -> bool:
         stripped = str(command_text or "").strip()
+        if stripped.startswith("名称绑定"):
+            return True
         if not stripped.startswith(ROULETTE_COMMAND_PREFIX):
             return False
         remainder = stripped[len(ROULETTE_COMMAND_PREFIX) :].strip()
